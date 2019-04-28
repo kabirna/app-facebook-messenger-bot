@@ -11,7 +11,8 @@ const access_token = "EAAJdsQ8XKicBAISvwzukv2DUHfvPOZBIg7MSXHTsXbVgZCPGZBUZCZAJW
 const app = express();
 
 //Configurar un puerto por defecto
-app.set('port', 5000);
+//app.set('port', 5000);
+app.set('port', (process.env.PORT || 5000) );
 
 //Para que nuestro servidor entienda la configuración que va a recibir por medio de la API de Facebook 
 //tenemos que añadir una nueva configuración
