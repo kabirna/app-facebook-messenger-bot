@@ -1019,4 +1019,4 @@ El JSON obtenido es algo asi, de donde podremos obtener las coordenadas (latitud
     git push heroku master
     ```
 
-9. Al finalizar nos dara una url que sera la de nuestra app ya en producción, esta URL debemos actualizarla en la pagina de Facebook Developers en el apartado de **Webhooks** para sustituir la que teniamos de **ngrok**.
+9. Al finalizar nos dara una url que sera la de nuestra app ya en producción, esta URL debemos actualizarla en la pagina de Facebook Developers en el apartado de **Webhooks** para sustituir la que teníamos de **ngrok**.

@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+        <title>Creación de un bot con Facebook Messenger</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        <link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+    </head>
+    <body>
+        <h1 id="creaci%C3%B3n-de-un-bot-con-facebook-messenger">Creación de un bot con Facebook Messenger</h1>
+<h2 id="creando-nuesta-pagina-en-facebook">Creando nuesta pagina en Facebook</h2>
+<ol>
+<li>
+<p>Ir a <a href="https://facebook.com/pages">https://facebook.com/pages</a> y dar click sobre el botón <strong>Create page</strong></p>
+</li>
+<li>
+<p>En la opción <strong>Comunity or Public Figure</strong> dar click en el botón <strong>Get Started</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/createPage.png" alt="createPage"></p>
+</li>
+<li>
+<p>Ponerle un nombre y categoría a nuestra pagina</p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/namePage.png" alt="namePage"></p>
+</li>
+</ol>
+<h2 id="crear-aplicaci%C3%B3n-en-facebook-for-developers">Crear aplicación en facebook for developers</h2>
+<ol>
+<li>
+<p>Ir a <a href="https://developers.facebook.com">https://developers.facebook.com</a> y dar click sobre el botón <strong>Log In</strong></p>
+</li>
+<li>
+<p>Dar click en la opción <strong>Create a New App ID</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/createApp.png" alt="createApp"></p>
+</li>
+</ol>
+<h2 id="configuracion-del-proyecto">Configuracion del proyecto</h2>
+<ol>
+<li>
+<p>Instalar <strong>nodejs</strong> y <strong>npm</strong></p>
+<p>En Arch Linux y derivadas (Antergos, Manjaro)</p>
+<pre><code class="language-bash"><div>sudo pacman -Sy nodejs npm
+</div></code></pre>
+<p>En Debian y derivadas (Ubuntu, Linux Mint)</p>
+<pre><code class="language-bash"><div>sudo apt install nodejs npm
+</div></code></pre>
+</li>
+<li>
+<p>Verificar que se instaló correctamente:</p>
+<pre><code class="language-bash"><div>node -v
+</div></code></pre>
+</li>
+<li>
+<p>Crear una carpeta para nuestro proyecto</p>
+<pre><code class="language-bash"><div>mkdir pugpizza
+</div></code></pre>
+</li>
+<li>
+<p>Entrar a nuestra carpeta recien creada e inicializar un repositorio local de git</p>
+<pre><code class="language-bash"><div><span class="hljs-built_in">cd</span> pugpizza
+git init
+</div></code></pre>
+</li>
+<li>
+<p>Vamos crear un archivo <code>package.json</code> que contendrá los datos de configuración de nuestra aplicación</p>
+<pre><code class="language-bash"><div>npm init
+</div></code></pre>
+<p>Le pondremos los siguientes datos para nuestra aplicación</p>
+<pre><code class="language-bash"><div>package name: (pugpizza)
+version: (1.0.0)
+description: Bot de messenger para nuestra pizzería
+entry point: (index.js) app.js
+<span class="hljs-built_in">test</span> <span class="hljs-built_in">command</span>:
+git repository:
+keywords:
+author: Hassim
+license: (ISC): MIT
+</div></code></pre>
+</li>
+<li>
+<p>Crear un archivo nuevo llamado <code>app.js</code> aqui es donde va a ser desarrollado todo nuestro proyecto.</p>
+</li>
+</ol>
+<h2 id="creaci%C3%B3n-de-webhook">Creación de Webhook</h2>
+<p>Vamos a instalar algunos modulos de <strong>npm</strong> necesarios</p>
+<blockquote>
+<ul>
+<li>express</li>
+<li>body-parser</li>
+<li>request</li>
+</ul>
+</blockquote>
+<pre><code class="language-bash"><div>npm install express body-parser request --save
+</div></code></pre>
+<p>En nuestro archivo <code>app.js</code> vamos a crear el webhook:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Habiitar el modo estricto</span>
+<span class="hljs-meta">'use strict'</span>
+
+<span class="hljs-comment">//Inluir los paquetes de nodejs que instalamos previamente</span>
+<span class="hljs-keyword">const</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express'</span>);
+<span class="hljs-keyword">const</span> bodyParser = <span class="hljs-built_in">require</span>(<span class="hljs-string">'body-parser'</span>);
+<span class="hljs-keyword">const</span> request = <span class="hljs-built_in">require</span>(<span class="hljs-string">'request'</span>);
+
+<span class="hljs-comment">//Creamos una constante llamada 'app' que extienda de express</span>
+<span class="hljs-keyword">const</span> app = express();
+
+<span class="hljs-comment">//Configurar un puerto por defecto</span>
+app.set(<span class="hljs-string">'port'</span>, <span class="hljs-number">5000</span>);
+
+<span class="hljs-comment">//Para que nuestro servidor entienda la configuración que va a recibir por medio de la API de Facebook</span>
+<span class="hljs-comment">//tenemos que añadir una nueva configuración</span>
+app.use(bodyParser.json());
+
+<span class="hljs-comment">//Creamos una ruta principal donde va a estar nuestro servidor</span>
+app.get(<span class="hljs-string">'/'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req, response</span>) </span>{
+    response.send(<span class="hljs-string">"Hola Mundo!"</span>);
+})
+
+<span class="hljs-comment">//Añadir nuestro webhook con el cual vamos a verificar con un Token la asignación que tendrá</span>
+<span class="hljs-comment">//nuestra API de Facebook con nuestro código en nuestro servidor con Express</span>
+app.get(<span class="hljs-string">'/webhook'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req, response</span>) </span>{
+    <span class="hljs-keyword">if</span>(req.query[<span class="hljs-string">'hub.verify_token'</span>] === <span class="hljs-string">'pugpizza_token'</span>) {
+        response.send(req.query[<span class="hljs-string">'hub.challenge'</span>]);
+    } <span class="hljs-keyword">else</span> {
+        response.send(<span class="hljs-string">"Pug Pizza no tienes permisos."</span>);
+    }
+})
+
+<span class="hljs-comment">//Creamos un mensaje para saber si esta funciónando nuestra aplicación</span>
+app.listen(app.get(<span class="hljs-string">'port'</span>), <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Nuestro servidor esta funciónando en el puerto: "</span>, app.get(<span class="hljs-string">'port'</span>));
+})
+</div></code></pre>
+<p>Iniciamos nuestra aplicación con <strong>node</strong></p>
+<pre><code class="language-bash"><div>node app.js
+</div></code></pre>
+<p>Y nos dará el mensaje que pusimos en nuestro archivo <code>app.js</code></p>
+<pre><code class="language-bash"><div>Nuestro servidor esta funciónando en el puerto:  5000
+</div></code></pre>
+<p>Abrimos nuestro navegador y nos vamos a <code>localhost:5000</code> y nos debe mostrar:</p>
+<blockquote>
+<p>Hola Mundo!</p>
+</blockquote>
+<p>Si accedemos a <code>localhost:5000/webhook</code> nos debe mostrar:</p>
+<blockquote>
+<p>Pug Pizza no tienes permisos.</p>
+</blockquote>
+<h2 id="entorno-y-conexi%C3%B3n-del-desarrollo-local-nodemonngrok-con-messenger">Entorno y conexión del desarrollo local (nodemon/ngrok) con Messenger</h2>
+<ol>
+<li>
+<p>Instalar <code>nodemon</code> el cual nos ayuda a mantener viva una sesión de nuestra aplicación.</p>
+<p>Debemos instalarlo primeramente de manera global con <code>sudo</code></p>
+<pre><code class="language-bash"><div>sudo npm install -g nodemon
+</div></code></pre>
+<p>Una vez instalado en nuestra carpeta del projecto lo instalamos como una herramienta de desarrollo usando el flag <code>--save-dev</code></p>
+<pre><code class="language-bash"><div>npm install --save-dev nodemon
+</div></code></pre>
+<p>Ahora corremos nuestra aplicación, pero en vez de usar <code>node app.js</code> usamos:</p>
+<pre><code class="language-bash"><div>nodemon app.js
+</div></code></pre>
+<p>Nos dará la salida de que se esta ejecutando correctamente</p>
+<pre><code class="language-bash"><div>[nodemon] 1.18.11
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching: *.*
+[nodemon] starting `node app.js`
+Nuestro servidor esta funciónando en el puerto:  5000
+</div></code></pre>
+</li>
+<li>
+<p>Instalar <code>ngrok</code> el cual nos permite crear un tunel para que nuestra aplicación local pueda ser accedida desde internet.</p>
+<p>Este modulo no puede ser instalado desde <strong>npm</strong>, debemos ir a su pagina, registrarnos y descargar un archivo comprimido.</p>
+<ul>
+<li>
+<p>Vamos a su pagína: <a href="https://ngrok.com/">https://ngrok.com/</a> y nos registramos.</p>
+</li>
+<li>
+<p>Bajamos el archivo correcto para nuestra plataforma, lo descomprimimos y el contenido es un archivo llamado <code>ngrok</code></p>
+</li>
+<li>
+<p>El archivo <code>ngrok</code> lo copiamos y debemos pegarlo en la raiz de nuestro proyecto.</p>
+</li>
+<li>
+<p>Abrimos otra pestaña en nuestra terminal ya que no debemos matar el proceso de <code>nodemon</code> y ejecutamos <code>ngrok</code> especificando el puerto que tenemos configurado en <code>app.js</code></p>
+<pre><code class="language-bash"><div>./ngrok http 5000
+</div></code></pre>
+<p>Esto nos dara una salida en la terminal indicando el dominio de internet desde donde podremos acceder a nuestro entorno local:</p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/ngRok.png" alt="ngRok"></p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="recibir-mensajes-con-messenger">Recibir mensajes con Messenger</h2>
+<ol>
+<li>
+<p>Accedemos a nuestro panel de control de <strong>facebook for developers</strong> y damos click en la barra lateral izquierda en <strong>Messenger &gt; Settings</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/dashboardMessengerSettings.png" alt="dashboardMessengerSettings"></p>
+</li>
+<li>
+<p>Generamos un token seleccionando nuesta pagina de Facebook del listado, en este caso <strong>PugPizza</strong> y damos click en el botón <strong>Edit Permissions</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/accessToken.png" alt="accessToken"></p>
+</li>
+<li>
+<p>Nos pedira autenticarnos con nuestra cuenta de Facebook y seleccionar a cual pagina queremos ligar el token, en este caso <strong>PugPizza</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/linkedToPugPizzaPage.png" alt="linkedToPugPizzaPage"></p>
+</li>
+<li>
+<p>Ir a la sección de <strong>Webhooks</strong> y dar click en el botón <strong>Suscribe To Events</strong>, en la ventana que se abre debemos poner en el <strong>Callback URL</strong> el dominio que nos generó <strong>ngrok</strong> seguido de <strong>/webhook</strong>, mas abajo el nombre del token que configuramos en <code>app.js</code> (<strong>pugpizza_token</strong>) y seleccionar la primera fila de <strong>Subscription Fields</strong> para finalmente dar en <strong>Verify and Save</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/webhooksSuscribeToEvents.png" alt="webhooksSuscribeToEvents"></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/newPageSubscription.png" alt="newPageSubscription"></p>
+</li>
+<li>
+<p>Se recargara nuestra pagina, volvemos a la sección de Webhooks y seleccionamos <strong>PugPizza</strong> de la lista y damos click en <strong>Suscribe</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/selectPageToSuscribe.png" alt="newPageSubscription"></p>
+</li>
+<li>
+<p>Volvemos a nuestro archivo <code>app.js</code> y agregaremos código para poder recibir los mensajes que nos manden desde messenger</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Saber lo que el usuario nos manda desde messenger</span>
+app.post(<span class="hljs-string">'/webhook'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req, response</span>) </span>{
+    <span class="hljs-keyword">const</span> webhook_event = req.body.entry[<span class="hljs-number">0</span>];
+    <span class="hljs-keyword">if</span>(webhook_event.messaging) {
+        webhook_event.messaging.forEach(<span class="hljs-function"><span class="hljs-params">event</span> =&gt;</span> {
+            <span class="hljs-built_in">console</span>.log(event);
+        })
+    }
+    response.sendStatus(<span class="hljs-number">200</span>);
+})
+</div></code></pre>
+</li>
+<li>
+<p>Ahora nos vamos a <a href="https://messenger.com">https://messenger.com</a> y buscamos PugPizza para enviarle un mensaje, probemos con un <strong>Hola</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/messageToChat.png" alt="messageToChat"></p>
+</li>
+<li>
+<p>Si nos vamos a nuestra terminal veremos que aparece el mensaje en formato JSON</p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/messageInTerminal.png" alt="messageInTerminal"></p>
+</li>
+</ol>
+<h2 id="responder-mensajes-con-messenger">Responder mensajes con Messenger</h2>
+<p>Lo primero que haremos sera crear una constante en <code>app.js</code> con nuestro token que previamente habiamos generado desde el panel de control de facebook for developers ya que lo vamos a necesitar en las posteriores funciónes</p>
+<pre><code class="language-js"><div><span class="hljs-keyword">const</span> access_token = <span class="hljs-string">"EAAlf2OMvQJ0BAGD5..."</span>;
+</div></code></pre>
+<p>Ahora crearemos una función que obtenga el mensaje recibido del usuario y prepare un mensaje que le enviaremos de respuesta:</p>
+<ol>
+<li>
+<p>Lo que haremos es recibir el mensaje y almacenar en constantes el <strong>id del remitente</strong> y el <strong>mensaje</strong>, si observamos veremos que a traves del parametro <code>event</code> estamos obteniendo el objeto JSON del mensaje, por lo que para obtener el id del <strong>sender</strong> debemos navegar dentro de los objetos del JSON, es decir primero ir a <code>sender</code> y luego mas adentro al <code>id</code>. De igual manera para obtener el texto del mensaje navegamos a <code>message</code> y luego a <code>text</code></p>
+</li>
+<li>
+<p>Creamos una constante llamada <code>messageData</code> donde definimos el mensaje que enviaremos de vuelta, en este caso le mandaremos exactamente el mismo mensaje de vuelta al usuario.</p>
+</li>
+<li>
+<p>Llamamos una función para enviar ese mensaje de vuelta que llamaremos <code>callSendApi</code> pasandole como parametro el <code>messageData</code>, esta función aun no existe por lo que la debemos crear.</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Procesar los mensajes recibidos</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleMessage</span>(<span class="hljs-params">event</span>) </span>{
+    <span class="hljs-keyword">const</span> senderId = event.sender.id;
+    <span class="hljs-keyword">const</span> messageText = event.message.text;
+
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-attr">recipient</span>: {
+            <span class="hljs-attr">id</span>: senderId
+        },
+        <span class="hljs-attr">message</span>: {
+            <span class="hljs-attr">text</span>: messageText
+        }
+    }
+    callSendApi(messageData);
+}
+</div></code></pre>
+</li>
+</ol>
+<p>Creamos la función <code>callSendApi</code> la cual usando el modulo de npm <code>request</code> que habíamos agregado anteriormente mandará una solicitud a traves de la API de Facebook llamada <code>Send API</code> con el mensaje que en este caso se encuentra en formato JSON en la variable que pasamos por parametro <code>response</code>, aqui debemos pasarle nuestro token que habíamos almecenado en la constante <code>access_token</code></p>
+<pre><code class="language-js"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">callSendApi</span>(<span class="hljs-params">response</span>) </span>{
+    request({
+            <span class="hljs-string">"uri"</span>: <span class="hljs-string">"https://graph.facebook.com/v3.2/me/messages"</span>,
+            <span class="hljs-string">"qs"</span>: {
+                <span class="hljs-string">"access_token"</span>: access_token
+            },
+            <span class="hljs-string">"method"</span>: <span class="hljs-string">"POST"</span>,
+            <span class="hljs-string">"json"</span>: response
+        },
+        <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+            <span class="hljs-keyword">if</span> (err) {
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Ha ocurrido un error"</span>);
+            } <span class="hljs-keyword">else</span> {
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Mensaje enviado"</span>);
+            }
+        }
+    )
+}
+</div></code></pre>
+<p>Ahora probamos enviarle un mensaje desde messenger y veremos que nos contesta exactamente lo mismo que le mandamos</p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/responseFromBot.png" alt="responseFromBot"></p>
+<h2 id="a%C3%B1adir-integraci%C3%B3n-de-bienvenida">Añadir integración de bienvenida</h2>
+<p>Para añadir un mensaje de bienvenida, haremos uso de <code>curl</code>, en la terminal deberemos agregar lo siguiente, el cual sera un <code>payload</code> que recibiremos cuando el usuario de click en el messenger en un botón de <strong>Empezar</strong> que le aparecera a partir de ahora, esto con la finalidad de facilitarle al usuario el inicio del bot:</p>
+<pre><code class="language-json"><div>curl -X POST -H <span class="hljs-string">"Content-Type: application/json"</span> -d '{
+    <span class="hljs-attr">"get_started"</span>: {<span class="hljs-attr">"payload"</span>:
+        <span class="hljs-string">"GET_STARTED_PUGPIZZA"</span>
+    }
+}' <span class="hljs-string">"https://graph.facebook.com/v3.2/me/messenger_profile?access_token=EAAlf2O..."</span>
+
+</div></code></pre>
+<p>Ahora configuraremos el mensaje de bienvenida en dos idiomas, español (default) e inglés:</p>
+<pre><code class="language-json"><div>curl -X POST -H <span class="hljs-string">"Content-Type: application/json"</span> -d '{
+    <span class="hljs-attr">"greeting"</span>: [
+        {
+            <span class="hljs-attr">"locale"</span>: <span class="hljs-string">"default"</span>,
+            <span class="hljs-attr">"text"</span>: <span class="hljs-string">"Hola {{user_first_name}}, soy PugPizza y te recomiendo las mejores pizzas"</span>
+        },
+        {
+            <span class="hljs-attr">"locale"</span>: <span class="hljs-string">"en_US"</span>,
+            <span class="hljs-attr">"text"</span>: <span class="hljs-string">"Hi {{user_first_name}}, im PugPizza and i recommend you the best pizzas"</span>
+        }
+    ]
+}' <span class="hljs-string">"https://graph.facebook.com/v3.2/me/messenger_profile?access_token=EAAlf2O..."</span>
+</div></code></pre>
+<p>Si nos vamos al messenger veremos que ahora en vez de tener que escribir algo, nos aparecerá el botón de <strong>Empezar (Get Started)</strong></p>
+<p><img src="file:////home/hnavarrete/httpdocs/platzi/Carrera - Arquitectura Frontend/11_bots_facebook_messenger/pugpizza-platzi/images/getStarted.png" alt="getStarted"></p>
+<h2 id="crear-men%C3%BA-persistente">Crear menú persistente</h2>
+<p>Creamos nuestro menú haciendo uso de <strong>Persistent Menu</strong> de la <strong>API de Facebook</strong></p>
+<pre><code class="language-json"><div>curl -X POST -H <span class="hljs-string">"Content-Type: application/json"</span> -d '{
+<span class="hljs-attr">"persistent_menu"</span>: [{
+  <span class="hljs-attr">"locale"</span>: <span class="hljs-string">"default"</span>,
+  <span class="hljs-attr">"composer_input_disabled"</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">"call_to_actions"</span>: [{
+      <span class="hljs-attr">"title"</span>: <span class="hljs-string">"🍕 PugPizza "</span>,
+      <span class="hljs-attr">"type"</span>: <span class="hljs-string">"nested"</span>,
+      <span class="hljs-attr">"call_to_actions"</span>: [{
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Acerca"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"ABOUT_PAYLOAD"</span>
+        },
+        {
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Sucursales"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"LOCATIONS_PAYLOAD"</span>
+        },
+        {
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Ayuda"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"HELP_PAYLOAD"</span>
+        },
+        {
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Contacto"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"CONTACT_PAYLOAD"</span>
+        }
+      ]
+    },
+    {
+      <span class="hljs-attr">"title"</span>: <span class="hljs-string">"💚 Menu de Productos"</span>,
+      <span class="hljs-attr">"type"</span>: <span class="hljs-string">"nested"</span>,
+      <span class="hljs-attr">"call_to_actions"</span>: [{
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Pizzas"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"PIZZAS_PAYLOAD"</span>
+        },
+        {
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Especialidades"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"SPECIALS_PAYLOAD"</span>
+        },
+        {
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Bebidas"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"DRINKS_PAYLOAD"</span>
+        },
+        {
+          <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Promociones"</span>,
+          <span class="hljs-attr">"type"</span>: <span class="hljs-string">"postback"</span>,
+          <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"PROMOTIONS_PAYLOAD"</span>
+        }
+      ]
+    },
+    {
+      <span class="hljs-attr">"type"</span>: <span class="hljs-string">"web_url"</span>,
+      <span class="hljs-attr">"title"</span>: <span class="hljs-string">"🐶 Pagina Web"</span>,
+      <span class="hljs-attr">"url"</span>: <span class="hljs-string">"http://platzi.com/bots-messenger/"</span>,
+      <span class="hljs-attr">"webview_height_ratio"</span>: <span class="hljs-string">"full"</span>
+    }
+  ]
+}]
+}' <span class="hljs-string">"https://graph.facebook.com/v3.2/me/messenger_profile?access_token=EAAlf2OMvQJ0BAGD5Ab1wvgaQ03DhReEZCdT3XqEgr81SPSbbIRQilRuST0gXrxdvXCzzixRdp6GuP6LLnxF6IICk6ES9IndzGoBgU7Qy02kibtJHZBHYmqPjEUHjGnoBAb3YimoJU8Rie9CQsbOsDlE7I6SAFxwlmGlnM3Pwa8ZCACosRZAZCCqPZB9sgZB4PwZD"</span>
+</div></code></pre>
+<h2 id="manejo-de-eventos-messages">Manejo de eventos: Messages</h2>
+<p>Ahora debemos modificar nuestra función que teniamos al principio llamada <code>handleMessage</code> la cual le repetia al usuario el mismo mensaje recibido.</p>
+<p>Vamos a eliminar o comentar la función anterior:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">/*
+//Procesar los mensajes recibidos
+function handleMessage(event) {
+    const senderId = event.sender.id;
+    const messageText = event.message.text;
+    const messageData = {
+        recipient: {
+            id: senderId
+        },
+        message: {
+            text: messageText
+        }
+    }
+    callSendApi(messageData);
+}
+*/</span>
+</div></code></pre>
+<p>Y la sustituiremos por un conjunto de funciones:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Funciones para manejar los eventos recibidos</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleEvent</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">if</span>(event.message) {
+        handleMessage(senderId, event.message);
+    }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleMessage</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">if</span>(event.text) {
+        defaultMessage(senderId);
+    }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">defaultMessage</span>(<span class="hljs-params">senderId</span>) </span>{
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-string">"recipient"</span>: {
+            <span class="hljs-string">"id"</span>: senderId
+        },
+        <span class="hljs-string">"message"</span>: {
+            <span class="hljs-string">"text"</span>: <span class="hljs-string">"Hola soy un bot de messenger, y te invito a utilizar nuestro menu"</span>
+        }
+    }
+    callSendApi(messageData);
+}
+</div></code></pre>
+<p>Como hemos modificado la funcion principal, tambien deberemos modificar nuestro funcion de webhook, sustituyendo donde usabamos la funcion anterior <code>handleMessage</code> por <code>handleEvent</code> y ahora en vez de uno espera recibir dos parametros:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Saber lo que el usuario nos manda desde messenger</span>
+app.post(<span class="hljs-string">'/webhook'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, response</span>) </span>{
+    <span class="hljs-keyword">const</span> webhook_event = req.body.entry[<span class="hljs-number">0</span>];
+    <span class="hljs-keyword">if</span> (webhook_event.messaging) {
+        webhook_event.messaging.forEach(<span class="hljs-function"><span class="hljs-params">event</span> =&gt;</span> {
+            <span class="hljs-comment">//console.log(event);</span>
+            <span class="hljs-comment">//handleMessage(event);</span>
+            handleEvent(event.sender.id ,event);
+        })
+    }
+    response.sendStatus(<span class="hljs-number">200</span>);
+})
+</div></code></pre>
+<h2 id="manejo-de-eventos-postback">Manejo de eventos: Postback</h2>
+<p>Debemos crear una función para poder recibir los <strong>Payloads</strong> de acuerdo a la acción que este realizando el usuario, por ejemplo cuando de click en el botón <strong>Empezar (Get Started)</strong> en el messenger:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Función para manejar los Payloads recibidos</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handlePostback</span>(<span class="hljs-params">senderId, payload</span>) </span>{
+    <span class="hljs-keyword">switch</span>(payload) {
+        <span class="hljs-keyword">case</span> <span class="hljs-string">"GET_STARTED_PUGPIZZA"</span>:
+            <span class="hljs-built_in">console</span>.log(payload);
+        <span class="hljs-keyword">break</span>;
+    }
+}
+</div></code></pre>
+<p>Una vez creada debemos agregarla a nuestra función existente <code>handleEvent</code> a través de un <code>else if</code>:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Funciones para manejar los eventos recibidos</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleEvent</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">if</span>(event.message) {
+        handleMessage(senderId, event.message);
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (event.postback) {
+        handlePostback(senderId, event.postback.payload);
+    }
+}
+</div></code></pre>
+<p>Ahora cada vez que demos click al botón <strong>Empezar</strong> en el messenger podemos observar en la terminal que nos devolverá el nombre del <strong>payload</strong>, en este caso <strong>GET_STARTED_PUGPIZZA</strong>.</p>
+<h2 id="manejo-de-eventos-attachments">Manejo de eventos: Attachments</h2>
+<p>Los Attachments son todos los tipos de archivos adjuntos que podemos enviar desde Messenger: imágenes, audios, videos, entre otros. Nuestro bot debe responder dependiendo el Attachment que envíen nuestros usuarios. Para esto creamos una funcion que procese esto llamada <code>handleAttachments</code></p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Función para manejar los adjuntos (attachments)</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleAttachments</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">let</span> attachment_type = event.attachments[<span class="hljs-number">0</span>].type;
+    <span class="hljs-keyword">switch</span>(attachment_type) {
+        <span class="hljs-keyword">case</span> <span class="hljs-string">"image"</span>:
+            <span class="hljs-built_in">console</span>.log(attachment_type);
+        <span class="hljs-keyword">break</span>;
+        <span class="hljs-keyword">case</span> <span class="hljs-string">"video"</span>:
+            <span class="hljs-built_in">console</span>.log(attachment_type);
+        <span class="hljs-keyword">break</span>;
+        <span class="hljs-keyword">case</span> <span class="hljs-string">'audio'</span>:
+            <span class="hljs-built_in">console</span>.log(attachment_type);
+        <span class="hljs-keyword">break</span>;
+        <span class="hljs-keyword">case</span> <span class="hljs-string">'file'</span>:
+            <span class="hljs-built_in">console</span>.log(attachment_type);
+        <span class="hljs-keyword">break</span>;
+    }
+}
+</div></code></pre>
+<p>Y la agregamos a la función existente <code>handleMessage</code>:</p>
+<pre><code class="language-js"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleMessage</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">if</span>(event.text) {
+        defaultMessage(senderId);
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(event.attachments) {
+        handleAttachments(senderId, event);
+    }
+}
+</div></code></pre>
+<p>Ahora al adjuntarle algo al bot, el sabra que tipo de adjunto es y lo imprimira en nuestra terminal.</p>
+<h2 id="respuestas-r%C3%A1pidas-y-acciones-de-env%C3%ADo">Respuestas rápidas y acciones de envío</h2>
+<p>Podemos configurar las respuestas rapidas que ejecuta nuestro bot, para eso dentro de la funcion <code>defaultMessage</code> justo debajo del mensaje de presentacion, agregamos el siguiente código:</p>
+<pre><code class="language-json"><div><span class="hljs-string">"quick_replies"</span>: [
+    {
+        <span class="hljs-attr">"content_type"</span>: <span class="hljs-string">"text"</span>,
+        <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Quieres una Pizza?"</span>,
+        <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"PIZZAS_PAYLOAD"</span>
+    },
+    {
+        <span class="hljs-attr">"content_type"</span>: <span class="hljs-string">"text"</span>,
+        <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Acerca de"</span>,
+        <span class="hljs-attr">"payload"</span>: <span class="hljs-string">"ABOUT_PAYLOAD"</span>
+    }
+]
+</div></code></pre>
+<p>Tambien podemos simular acciones como por ejemplo que parezca que el bot esta escribiendo, esto lo haremos crenado una nueva función:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Funcion para enviar acciones al usuario (Simular que estamos escribiendo)</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">senderActions</span>(<span class="hljs-params">senderId</span>) </span>{
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-string">"recipient"</span> : {
+            <span class="hljs-string">"id"</span>: senderId
+        },
+        <span class="hljs-string">"sender_action"</span>:<span class="hljs-string">"typing_on"</span>
+    }
+    callSendApi(messageData);
+}
+</div></code></pre>
+<p>Otras acciones:</p>
+<blockquote>
+<ul>
+<li>mark_seen: Marcar el mensaje como leído</li>
+<li>typing_off: Desactivar los indicadores de escritura</li>
+</ul>
+</blockquote>
+<p>Debemos agregar a dentro de nuestra función <code>defaultMessage</code> la función recién creada <code>senderActions</code> para que tenga efecto, asi que nuestra funcion completa quedaría de esta forma:</p>
+<pre><code class="language-js"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">defaultMessage</span>(<span class="hljs-params">senderId</span>) </span>{
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-string">"recipient"</span>: {
+            <span class="hljs-string">"id"</span>: senderId
+        },
+        <span class="hljs-string">"message"</span>: {
+            <span class="hljs-string">"text"</span>: <span class="hljs-string">"Hola soy un bot de messenger, y te invito a utilizar nuestro menu"</span>,
+            <span class="hljs-string">"quick_replies"</span>: [
+                {
+                    <span class="hljs-string">"content_type"</span>: <span class="hljs-string">"text"</span>,
+                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Quieres una Pizza?"</span>,
+                    <span class="hljs-string">"payload"</span>: <span class="hljs-string">"PIZZAS_PAYLOAD"</span>
+                },
+                {
+                    <span class="hljs-string">"content_type"</span>: <span class="hljs-string">"text"</span>,
+                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Acerca de"</span>,
+                    <span class="hljs-string">"payload"</span>: <span class="hljs-string">"ABOUT_PAYLOAD"</span>
+                }
+            ]
+        }
+    }
+    senderActions(senderId);
+    callSendApi(messageData);
+}
+</div></code></pre>
+<h2 id="templates-y-listado-de-elementos">Templates y listado de elementos</h2>
+<p>Para poder presentar al usuario un listado de elementos, en este caso un listado de las pizzas, vamos a crear una nueva funcion que contendra todas las variantes de pizzas que tenemos:</p>
+<pre><code class="language-js"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">showPizzas</span>(<span class="hljs-params">senderId</span>) </span>{
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-string">"recipient"</span>: {
+            <span class="hljs-string">"id"</span>:senderId
+        },
+        <span class="hljs-string">"message"</span>: {
+            <span class="hljs-string">"attachment"</span>: {
+                <span class="hljs-string">"type"</span>: <span class="hljs-string">"template"</span>,
+                <span class="hljs-string">"payload"</span>: {
+                    <span class="hljs-string">"template_type"</span>: <span class="hljs-string">"generic"</span>,
+                    <span class="hljs-string">"elements"</span> : [
+                        {
+                            <span class="hljs-string">"title"</span>:<span class="hljs-string">"Pepperoni"</span>,
+                            <span class="hljs-string">"subtitle"</span>:<span class="hljs-string">"Con todo el sabor del pepperoni"</span>,
+                            <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                            <span class="hljs-string">"buttons"</span>: [
+                                {
+                                    <span class="hljs-string">"type"</span>: <span class="hljs-string">"postback"</span>,
+                                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Elegir Pepperoni"</span>,
+                                    <span class="hljs-string">"payload"</span>: <span class="hljs-string">"PEPPERONI_PAYLOAD"</span>
+                                }
+                            ]
+                        },
+                        {
+                            <span class="hljs-string">"title"</span>:<span class="hljs-string">"Pollo BBQ"</span>,
+                            <span class="hljs-string">"subtitle"</span>:<span class="hljs-string">"Con todo el sabor del pollo BBQ"</span>,
+                            <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                            <span class="hljs-string">"buttons"</span>: [
+                                {
+                                    <span class="hljs-string">"type"</span>: <span class="hljs-string">"postback"</span>,
+                                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Elegir Pollo BBQ"</span>,
+                                    <span class="hljs-string">"payload"</span>: <span class="hljs-string">"BBQ_PAYLOAD"</span>
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    callSendApi(messageData);
+}
+</div></code></pre>
+<p>Ahora debemos detectar el <strong>payload</strong> de cuando el usuario selecciona del <strong>Menu de productos</strong> -&gt; <strong>Pizzas</strong>, para esto vamos a agregarle un <strong>CASE</strong> nuevo al switch de la funcion <code>handlePostback</code> que es la que recibe los payloads:</p>
+<pre><code class="language-js"><div><span class="hljs-keyword">case</span> <span class="hljs-string">"PIZZAS_PAYLOAD"</span>:
+    showPizzas(senderId);
+<span class="hljs-keyword">break</span>;
+</div></code></pre>
+<h2 id="crear-un-template-de-lista-vertical">Crear un template de lista vertical</h2>
+<p>Ahora vamos a crear un template en forma de lista, para que el usuario seleccione el tamaño de la pizza elegida, vamos a agregar una nueva función:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">// Funcion para mostrar el tamano de las pizza que quiere ordenar</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">sizePizza</span>(<span class="hljs-params">senderId</span>) </span>{
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-string">"recipient"</span>: {
+            <span class="hljs-string">"id"</span>: senderId
+        },
+        <span class="hljs-string">"message"</span>: {
+            <span class="hljs-attr">attachment</span>: {
+                <span class="hljs-string">"type"</span>: <span class="hljs-string">"template"</span>,
+                <span class="hljs-string">"payload"</span>: {
+                    <span class="hljs-string">"template_type"</span>: <span class="hljs-string">"list"</span>,
+                    <span class="hljs-string">"top_element_style"</span>: <span class="hljs-string">"large"</span>,
+                    <span class="hljs-string">"elements"</span>: [
+                        {
+                            <span class="hljs-string">"title"</span>: <span class="hljs-string">"Individual"</span>,
+                            <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                            <span class="hljs-string">"subtitle"</span>:<span class="hljs-string">"Porcion individual"</span>,
+                            <span class="hljs-string">"buttons"</span>: [
+                                {
+                                    <span class="hljs-string">"type"</span>: <span class="hljs-string">"postback"</span>,
+                                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Elegir individual"</span>,
+                                    <span class="hljs-string">"payload"</span>: <span class="hljs-string">"PERSONAL_SIZE_PAYLOAD"</span>
+                                }
+                            ]
+                        },
+                        {
+                            <span class="hljs-string">"title"</span>: <span class="hljs-string">"Mediana"</span>,
+                            <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                            <span class="hljs-string">"subtitle"</span>:<span class="hljs-string">"Porcion mediana"</span>,
+                            <span class="hljs-string">"buttons"</span>: [
+                                {
+                                    <span class="hljs-string">"type"</span>: <span class="hljs-string">"postback"</span>,
+                                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Elegir mediana"</span>,
+                                    <span class="hljs-string">"payload"</span>: <span class="hljs-string">"MEDIUM_SIZE_PAYLOAD"</span>
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    callSendApi(messageData);
+}
+</div></code></pre>
+<p>Ahora vamos a agregarle un <strong>CASE</strong> nuevo al switch de la funcion <code>handlePostback</code> que es la que recibe los payloads, donde uno de ellos sera para la pizza de pepperoni y otro para la de BBQ:</p>
+<pre><code class="language-js"><div><span class="hljs-keyword">case</span> <span class="hljs-string">"PEPPERONI_PAYLOAD"</span>:
+    sizePizza(senderId);
+<span class="hljs-keyword">break</span>;
+<span class="hljs-keyword">case</span> <span class="hljs-string">"BBQ_PAYLOAD"</span>:
+    sizePizza(senderId);
+<span class="hljs-keyword">break</span>;
+</div></code></pre>
+<h2 id="usar-webviews">Usar WebViews</h2>
+<p>Podemos abrir paginas dentro del propio messenger utilizando webviews, vamos a crear una funcion que muestre la ubicación de las sucursales en un mapa:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Funcion para un webview dentro del messenger, en este caso mostraremos un mapa</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">showLocations</span>(<span class="hljs-params">senderId</span>) </span>{
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-string">"recipient"</span>: {
+            <span class="hljs-string">"id"</span>: senderId
+        },
+        <span class="hljs-string">"message"</span>: {
+            <span class="hljs-string">"attachment"</span>: {
+                <span class="hljs-string">"type"</span>: <span class="hljs-string">"template"</span>,
+                <span class="hljs-string">"payload"</span>: {
+                    <span class="hljs-string">"template_type"</span>: <span class="hljs-string">"list"</span>,
+                    <span class="hljs-string">"top_element_style"</span>: <span class="hljs-string">"large"</span>,
+                    <span class="hljs-string">"elements"</span>: [
+                        {
+                            <span class="hljs-string">"title"</span>: <span class="hljs-string">"Sucursal Mexico"</span>,
+                            <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                            <span class="hljs-string">"subtitle"</span>: <span class="hljs-string">"Direccion bonita #555"</span>,
+                            <span class="hljs-string">"buttons"</span>: [
+                                {
+                                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Ver en el mapa"</span>,
+                                    <span class="hljs-string">"type"</span>: <span class="hljs-string">"web_url"</span>,
+                                    <span class="hljs-string">"url"</span>: <span class="hljs-string">"https://goo.gl/maps/GCCpWmZep1t"</span>,
+                                    <span class="hljs-string">"webview_height_ratio"</span>: <span class="hljs-string">"full"</span>
+                                }
+                            ]
+                        },
+                        {
+                            <span class="hljs-string">"title"</span>: <span class="hljs-string">"Sucursal Colombia"</span>,
+                            <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                            <span class="hljs-string">"subtitle"</span>: <span class="hljs-string">"Direccion muy lejana #333"</span>,
+                            <span class="hljs-string">"buttons"</span>: [
+                                {
+                                    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Ver en el mapa"</span>,
+                                    <span class="hljs-string">"type"</span>: <span class="hljs-string">"web_url"</span>,
+                                    <span class="hljs-string">"url"</span>: <span class="hljs-string">"https://goo.gl/maps/GCCpWmZep1t"</span>,
+                                    <span class="hljs-string">"webview_height_ratio"</span>: <span class="hljs-string">"tall"</span>
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    callSendApi(messageData);
+}
+</div></code></pre>
+<p>Para probar si funciona podemos hacerlo en <code>handleMessage</code> cuando el usuario nos mande cualquier cosa:</p>
+<pre><code class="language-js"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleMessage</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">if</span>(event.text) {
+        <span class="hljs-comment">//defaultMessage(senderId);</span>
+        <span class="hljs-comment">//messageImage(senderId);</span>
+        <span class="hljs-comment">//contactSupport(senderId);</span>
+        showLocation(senderId);
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(event.attachments) {
+        handleAttachments(senderId, event);
+    }
+}
+</div></code></pre>
+<h2 id="receipt-template">Receipt Template</h2>
+<p>Vamos a generar un recibo de pago mediante un template, simulando la compra de uno de nuestro usuarios, para esto crearemos la funcion para visualizar dicho recibo:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Función para generar un recibo de pago</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">receipt</span>(<span class="hljs-params">senderId</span>) </span>{
+   <span class="hljs-keyword">const</span> messageData = {
+       <span class="hljs-string">"recipient"</span>: {
+           <span class="hljs-string">"id"</span>: senderId
+       },
+       <span class="hljs-string">"message"</span>: {
+           <span class="hljs-string">"attachment"</span>: {
+               <span class="hljs-string">"type"</span>: <span class="hljs-string">"template"</span>,
+               <span class="hljs-string">"payload"</span>: {
+                   <span class="hljs-string">"template_type"</span>: <span class="hljs-string">"receipt"</span>,
+                   <span class="hljs-string">"recipient_name"</span>: <span class="hljs-string">"User Name"</span>,
+                   <span class="hljs-string">"order_number"</span>: <span class="hljs-string">"1212120"</span>,
+                   <span class="hljs-string">"currency"</span>: <span class="hljs-string">"MXN"</span>,
+                   <span class="hljs-string">"payment_method"</span>: <span class="hljs-string">"Efectivo"</span>,
+                   <span class="hljs-string">"order_url"</span>: <span class="hljs-string">"https://platzi.com/order/123"</span>,
+                   <span class="hljs-string">"timestamp"</span>: <span class="hljs-string">"123123123"</span>,
+                   <span class="hljs-string">"address"</span>: {
+                       <span class="hljs-string">"street_1"</span>: <span class="hljs-string">"platzi hq"</span>,
+                       <span class="hljs-string">"street_2"</span>: <span class="hljs-string">"none"</span>,
+                       <span class="hljs-string">"city"</span>: <span class="hljs-string">"Mexico"</span>,
+                       <span class="hljs-string">"postal_code"</span>: <span class="hljs-string">"54654"</span>,
+                       <span class="hljs-string">"state"</span>: <span class="hljs-string">"Mexico"</span>,
+                       <span class="hljs-string">"country"</span>: <span class="hljs-string">"Mexico"</span>
+                   },
+                   <span class="hljs-string">"summary"</span>: {
+                        <span class="hljs-string">"subtotal"</span>: <span class="hljs-number">12.00</span>,
+                        <span class="hljs-string">"shipping_cost"</span>: <span class="hljs-number">2.00</span>,
+                        <span class="hljs-string">"total_tax"</span>: <span class="hljs-number">1.00</span>,
+                        <span class="hljs-string">"total_cost"</span>: <span class="hljs-number">15.00</span>
+                   },
+                   <span class="hljs-string">"adjustments"</span>: [
+                       {
+                            <span class="hljs-string">"name"</span>: <span class="hljs-string">"Descuento frecuente"</span>,
+                            <span class="hljs-string">"amount"</span>: <span class="hljs-number">1.00</span>
+                       }
+                   ],
+                   <span class="hljs-string">"elements"</span>: [
+                       {
+                           <span class="hljs-string">"title"</span>: <span class="hljs-string">"Pizza Pepperonni"</span>,
+                           <span class="hljs-string">"subtitle"</span>: <span class="hljs-string">"La mejor pizza de Pepperonni"</span>,
+                           <span class="hljs-string">"quantity"</span>: <span class="hljs-number">1</span>,
+                           <span class="hljs-string">"price"</span>: <span class="hljs-number">10</span>,
+                           <span class="hljs-string">"currency"</span>: <span class="hljs-string">"MXN"</span>,
+                           <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                       },
+                       {
+                            <span class="hljs-string">"title"</span>: <span class="hljs-string">"Bebida"</span>,
+                            <span class="hljs-string">"subtitle"</span>: <span class="hljs-string">"Jugo de tamarindo"</span>,
+                            <span class="hljs-string">"quantity"</span>: <span class="hljs-number">1</span>,
+                            <span class="hljs-string">"price"</span>: <span class="hljs-number">2</span>,
+                            <span class="hljs-string">"currency"</span>: <span class="hljs-string">"MXN"</span>,
+                            <span class="hljs-string">"image_url"</span>: <span class="hljs-string">"https://s3.amazonaws.com/chewiekie/img/productos-pizza-peperoni-champinones.jpg"</span>,
+                        }
+                    ]
+               }
+           }
+       }
+   }
+   callSendApi(messageData);
+}
+</div></code></pre>
+<p>Para probar si funciona podemos hacerlo en <code>handleMessage</code> cuando el usuario nos mande cualquier cosa:</p>
+<pre><code class="language-js"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleMessage</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">if</span>(event.text) {
+        <span class="hljs-comment">//defaultMessage(senderId);</span>
+        <span class="hljs-comment">//messageImage(senderId);</span>
+        <span class="hljs-comment">//contactSupport(senderId);</span>
+        <span class="hljs-comment">//showLocation(senderId);</span>
+        receipt(senderId);
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(event.attachments) {
+        handleAttachments(senderId, event);
+    }
+}
+</div></code></pre>
+<h2 id="obtener-la-localizacion-del-usuario">Obtener la localizacion del usuario</h2>
+<p>Vamos a pedir al usuario que nos comparta su ubicacion actual:</p>
+<pre><code class="language-js"><div><span class="hljs-comment">//Función para obtener la ubicación del usuario</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">getLocation</span>(<span class="hljs-params">senderId</span>) </span>{
+    <span class="hljs-keyword">const</span> messageData = {
+        <span class="hljs-string">"recipient"</span>: {
+            <span class="hljs-string">"id"</span>: senderId
+        },
+        <span class="hljs-string">"message"</span>: {
+            <span class="hljs-string">"text"</span>: <span class="hljs-string">"Ahora puedes proporcionarnos tu ubicacion"</span>,
+            <span class="hljs-string">"quick_replies"</span>: [{
+                <span class="hljs-string">"content_type"</span>: <span class="hljs-string">"location"</span>
+            }]
+        }
+    }
+    callSendApi(messageData);
+}
+</div></code></pre>
+<p>Para probar si funciona podemos hacerlo en <code>handleMessage</code> cuando el usuario nos mande cualquier cosa:</p>
+<pre><code class="language-js"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleMessage</span>(<span class="hljs-params">senderId, event</span>) </span>{
+    <span class="hljs-keyword">if</span>(event.text) {
+        <span class="hljs-comment">//defaultMessage(senderId);</span>
+        <span class="hljs-comment">//messageImage(senderId);</span>
+        <span class="hljs-comment">//contactSupport(senderId);</span>
+        <span class="hljs-comment">//showLocation(senderId);</span>
+        <span class="hljs-comment">//receipt(senderId);</span>
+        getLocation(senderId);
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(event.attachments) {
+        handleAttachments(senderId, event);
+    }
+}
+</div></code></pre>
+<p>Para poder ver en consola los datos de la ubicacion, debemos agregar un nuevo <strong>CASE</strong> en nuestra función <code>handleAttachments</code>, usaremos <code>JSON.stringify()</code> para convertitlo a una cadena:</p>
+<pre><code class="language-js"><div><span class="hljs-keyword">case</span> <span class="hljs-string">'location'</span>:
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-built_in">JSON</span>.stringify(event));
+<span class="hljs-keyword">break</span>;
+</div></code></pre>
+<p>El JSON obtenido es algo asi, de donde podremos obtener las coordenadas (latitud y longitud):</p>
+<pre><code class="language-json"><div>{
+    <span class="hljs-attr">"mid"</span>: <span class="hljs-string">"v5e0d_hre6o5ToLLX5oLgXVUwvbv3aVSOVYy3JKDnZSD8hL6ynQnPZOxMMTv_l82i5qwyoSmt8TTCdO8C5KOSQ"</span>,
+    <span class="hljs-attr">"seq"</span>: <span class="hljs-number">618</span>,
+    <span class="hljs-attr">"attachments"</span>: [{
+        <span class="hljs-attr">"title"</span>: <span class="hljs-string">"Facultad de Pedagogia UV"</span>,
+        <span class="hljs-attr">"url"</span>: <span class="hljs-string">"https://l.facebook.com/l.php?u=https%3A%2F%2Fwww.bing.com%2Fmaps%2Fdefault.aspx%3Fv%3D2%26pc%3DFACEBK%26mid%3D8100%26where1%3DAV.%2BARCO%2BSUR%252C%2B%2BXALAPA-VERACRUZ%252C%2B91098%2BXalapa%252C%2BMexico%26FORM%3DFBKPL1%26mkt%3Den-US&amp;h=AT3A76dodoU1LI2NJ6LEPYQdH2gLHRgHi7xBaIrbsXa6Gte9wKl3zzvD3CEbXXIfoHbEa1KynvGgeoiHpe5Pr6-N48z2BV1f5u1c0WFmLfMvbtgIGa-hpLfw-ZJjjuqj7pJeO4XMRbHXFwE&amp;s=1"</span>,
+        <span class="hljs-attr">"type"</span>: <span class="hljs-string">"location"</span>,
+        <span class="hljs-attr">"payload"</span>: {
+            <span class="hljs-attr">"coordinates"</span>: {
+                <span class="hljs-attr">"lat"</span>: <span class="hljs-number">19.508077141247</span>,
+                <span class="hljs-attr">"long"</span>: <span class="hljs-number">-96.888988283944</span>
+            }
+        }
+    }]
+}
+</div></code></pre>
+<h2 id="subir-nuestra-app-a-producci%C3%B3n-con-heroku">Subir nuestra app a producción con Heroku</h2>
+<ol>
+<li>
+<p>Registarse en la pagina web de Heroku</p>
+</li>
+<li>
+<p>Instalar Heroku CLI</p>
+<pre><code class="language-bash"><div>yay -Sy heroku-cli
+</div></code></pre>
+</li>
+<li>
+<p>Desde la terminal inciar sesión</p>
+<pre><code class="language-bash"><div>heroku login
+</div></code></pre>
+</li>
+<li>
+<p>Crear la aplicación</p>
+<pre><code class="language-bash"><div>heroku create [NOMBRE DE TU APLICACIÓN]
+</div></code></pre>
+</li>
+<li>
+<p>Editar el archivo <code>package.json</code> añadiendo el script <code>start</code> para que Heroku sepa como iniciar nuesta aplicación</p>
+<pre><code class="language-json"><div><span class="hljs-string">"scripts"</span>: {
+    <span class="hljs-attr">"test"</span>: <span class="hljs-string">"echo \"Error: no test specified\" &amp;&amp; exit 1"</span>,
+    <span class="hljs-attr">"start"</span>: <span class="hljs-string">"node app.js"</span>
+},
+</div></code></pre>
+<p>Si queremos especificar la versión de nodejs a utilizar también añadimos la siguiente linea:</p>
+<pre><code class="language-json"><div><span class="hljs-string">"engines"</span>: {
+    <span class="hljs-attr">"node"</span>: <span class="hljs-string">"11.14.0"</span>
+}
+</div></code></pre>
+</li>
+<li>
+<p>Añadimos el remoto de Heroku</p>
+<pre><code class="language-bash"><div>heroku git:remote -a pugpizza-platzi
+</div></code></pre>
+</li>
+<li>
+<p>Añadimos todos los archivos a staging y hacemos commit</p>
+<pre><code class="language-bash"><div>git add .
+git commit -m <span class="hljs-string">"mensaje"</span>
+</div></code></pre>
+</li>
+<li>
+<p>Hacemos push a Heroku</p>
+<pre><code class="language-bash"><div>git push heroku master
+</div></code></pre>
+</li>
+<li>
+<p>Al finalizar nos dara una url que sera la de nuestra app ya en producción, esta URL debemos actualizarla en la pagina de Facebook Developers en el apartado de <strong>Webhooks</strong> para sustituir la que teníamos de <strong>ngrok</strong>.</p>
+</li>
+</ol>
+
+    </body>
+    </html>
